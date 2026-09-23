@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:window_manager/window_manager.dart';
 
-import '../../../providers/auth_providers.dart';
+import '../providers/auth_providers.dart';
 
 class _AuthColors {
   _AuthColors._();
@@ -150,6 +151,7 @@ class _AuthPageState extends State<AuthPage>
         children: [
           const _HeroPanel(),
           if (isDesktop) _desktopAuth() else _mobileAuth(),
+          const _AuthTopBar(),
         ],
       ),
     );
@@ -183,34 +185,34 @@ class _AuthPageState extends State<AuthPage>
     const radius = 24.0;
 
     return RepaintBoundary (
-      child :_LiquidGlassCard(
-      radius: radius,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          mobile ? 22 : 28,
-          mobile ? 22 : 28,
-          mobile ? 22 : 28,
-          mobile ? 20 : 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _tabSelector(),
-
-            const SizedBox(height: 4),
-
-            // Only build the currently selected form.
-            AnimatedSize(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              child: _tabs.index == 0
-                  ? _loginForm()
-                  : _signupForm(),
+        child :_LiquidGlassCard(
+          radius: radius,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              mobile ? 22 : 28,
+              mobile ? 22 : 28,
+              mobile ? 22 : 28,
+              mobile ? 20 : 24,
             ),
-          ],
-        ),
-      ),
-      )
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _tabSelector(),
+
+                const SizedBox(height: 4),
+
+                // Only build the currently selected form.
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  child: _tabs.index == 0
+                      ? _loginForm()
+                      : _signupForm(),
+                ),
+              ],
+            ),
+          ),
+        )
     );
   }
 
@@ -278,11 +280,11 @@ class _AuthPageState extends State<AuthPage>
   Widget _loginForm() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 22, 2, 4),
-      
+
       child: Form(
         key: _loginKey,
         child: Column(
-          
+
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
@@ -510,7 +512,7 @@ class _AuthPageState extends State<AuthPage>
         filled: true,
         fillColor: Colors.white.withOpacity(0.07),
         contentPadding:
-            const EdgeInsets.symmetric(vertical: 16, horizontal: 15),
+        const EdgeInsets.symmetric(vertical: 16, horizontal: 15),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(13),
           borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
@@ -596,21 +598,21 @@ class _AuthPageState extends State<AuthPage>
           ),
           child: loading
               ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white,
+            ),
+          )
               : Text(
-                  label.toUpperCase(),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12.5,
-                    letterSpacing: 1.2,
-                  ),
-                ),
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 12.5,
+              letterSpacing: 1.2,
+            ),
+          ),
         ),
       ),
     );
@@ -620,6 +622,114 @@ class _AuthPageState extends State<AuthPage>
     if (v == null || v.trim().isEmpty) return 'Enter your email';
     if (!v.contains('@')) return 'Enter a valid email';
     return null;
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// AUTH TOP BAR (drag area + window controls only — no date/time, no notif,
+// no profile, since there's no logged-in user yet on this screen)
+// ═════════════════════════════════════════════════════════════════════════════
+
+class _AuthTopBar extends StatelessWidget {
+  const _AuthTopBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 40,
+      child: Row(
+        children: [
+          Expanded(
+            child: DragToMoveArea(
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+          const _AuthWindowButtons(),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthWindowButtons extends StatelessWidget {
+  const _AuthWindowButtons();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _AuthWindowButton(
+          icon: Icons.remove,
+          onPressed: () => windowManager.minimize(),
+        ),
+        _AuthWindowButton(
+          icon: Icons.crop_square,
+          iconSize: 13,
+          onPressed: () async {
+            if (await windowManager.isMaximized()) {
+              windowManager.unmaximize();
+            } else {
+              windowManager.maximize();
+            }
+          },
+        ),
+        _AuthWindowButton(
+          icon: Icons.close,
+          hoverColor: Colors.redAccent,
+          onPressed: () => windowManager.close(),
+        ),
+      ],
+    );
+  }
+}
+
+class _AuthWindowButton extends StatefulWidget {
+  const _AuthWindowButton({
+    required this.icon,
+    required this.onPressed,
+    this.hoverColor,
+    this.iconSize = 16,
+  });
+
+  final IconData icon;
+  final VoidCallback onPressed;
+  final Color? hoverColor;
+  final double iconSize;
+
+  @override
+  State<_AuthWindowButton> createState() => _AuthWindowButtonState();
+}
+
+class _AuthWindowButtonState extends State<_AuthWindowButton> {
+  bool _hovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = _hovering
+        ? (widget.hoverColor ?? Colors.white.withOpacity(0.08))
+        : Colors.transparent;
+    final iconColor = _hovering && widget.hoverColor != null
+        ? Colors.white
+        : Colors.white.withOpacity(0.55);
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: Container(
+          width: 46,
+          height: 40,
+          color: bg,
+          alignment: Alignment.center,
+          child: Icon(widget.icon, size: widget.iconSize, color: iconColor),
+        ),
+      ),
+    );
   }
 }
 
@@ -994,7 +1104,7 @@ class _HeroPanel extends StatelessWidget {
       children: [
         Container(
           padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: const Color(0xFF071A31).withOpacity(0.55),
             borderRadius: BorderRadius.circular(999),

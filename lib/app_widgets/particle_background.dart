@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../core/theme/app_colors.dart';
 
 class ParticleBackground extends StatefulWidget {
   final Widget child;
