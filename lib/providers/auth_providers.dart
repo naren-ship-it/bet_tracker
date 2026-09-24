@@ -167,8 +167,6 @@ Future<bool> verifyPasswordResetOtp({
 // ───────────────────────────────────────────────────────────────────────────
 
   Future<bool> resetPassword({
-    required String identifier,
-    required String otp,
     required String newPassword,
     required String confirmPassword,
   }) async {
@@ -178,8 +176,7 @@ Future<bool> verifyPasswordResetOtp({
       _errorMessage = null;
 
       await _authService.resetPassword(
-        identifier: identifier,
-        otp: otp,
+       
         newPassword: newPassword,
         confirmPassword: confirmPassword,
       );

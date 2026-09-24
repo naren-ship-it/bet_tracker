@@ -1,11 +1,13 @@
+
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:window_manager/window_manager.dart';
 
-import '../../../providers/auth_providers.dart';
+import '../providers/auth_providers.dart';
 
 // ═════════════════════════════════════════════════════════════════════════════
 // COLORS
@@ -345,8 +347,7 @@ class _AuthPageState extends State<AuthPage>
     final auth = context.read<AuthProvider>();
 
     final ok = await auth.resetPassword(
-      identifier: _forgotIdentifier.text.trim(),
-      otp: _forgotOtp.text.trim(),
+    
       newPassword: _forgotNewPassword.text,
       confirmPassword: _forgotConfirmPassword.text,
     );
@@ -638,6 +639,7 @@ class _AuthPageState extends State<AuthPage>
         children: [
           const _HeroPanel(),
           if (isDesktop) _desktopAuth() else _mobileAuth(),
+          const _AuthTopBar(),
         ],
       ),
     );
@@ -1647,7 +1649,121 @@ class _AuthPageState extends State<AuthPage>
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// POINTER CURSOR
+// AUTH TOP BAR
+// ═════════════════════════════════════════════════════════════════════════════
+
+class _AuthTopBar extends StatelessWidget {
+  const _AuthTopBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 40,
+      child: Row(
+        children: [
+          Expanded(
+            child: DragToMoveArea(
+              child: Container(
+                color: Colors.transparent,
+              ),
+            ),
+          ),
+          const _AuthWindowButtons(),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthWindowButtons extends StatelessWidget {
+  const _AuthWindowButtons();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _AuthWindowButton(
+          icon: Icons.remove,
+          onPressed: () => windowManager.minimize(),
+        ),
+        _AuthWindowButton(
+          icon: Icons.crop_square,
+          iconSize: 13,
+          onPressed: () async {
+            if (await windowManager.isMaximized()) {
+              windowManager.unmaximize();
+            } else {
+              windowManager.maximize();
+            }
+          },
+        ),
+        _AuthWindowButton(
+          icon: Icons.close,
+          hoverColor: Colors.redAccent,
+          onPressed: () => windowManager.close(),
+        ),
+      ],
+    );
+  }
+}
+
+class _AuthWindowButton extends StatefulWidget {
+  const _AuthWindowButton({
+    required this.icon,
+    required this.onPressed,
+    this.hoverColor,
+    this.iconSize = 16,
+  });
+
+  final IconData icon;
+  final VoidCallback onPressed;
+  final Color? hoverColor;
+  final double iconSize;
+
+  @override
+  State<_AuthWindowButton> createState() => _AuthWindowButtonState();
+}
+
+class _AuthWindowButtonState extends State<_AuthWindowButton> {
+  bool _hovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = _hovering
+        ? (widget.hoverColor ?? Colors.white.withOpacity(0.08))
+        : Colors.transparent;
+
+    final iconColor = _hovering && widget.hoverColor != null
+        ? Colors.white
+        : Colors.white.withOpacity(0.55);
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: Container(
+          width: 46,
+          height: 40,
+          color: bg,
+          alignment: Alignment.center,
+          child: Icon(
+            widget.icon,
+            size: widget.iconSize,
+            color: iconColor,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// POINTER CURSOR WIDGET
 // ═════════════════════════════════════════════════════════════════════════════
 
 class _PointerCursorWidget extends StatelessWidget {
@@ -1715,7 +1831,6 @@ class _LiquidGlassCard extends StatelessWidget {
               ),
             ),
           ),
-
           Positioned.fill(
             child: IgnorePointer(
               child: Container(
@@ -1736,7 +1851,6 @@ class _LiquidGlassCard extends StatelessWidget {
               ),
             ),
           ),
-
           Positioned.fill(
             child: IgnorePointer(
               child: Container(
@@ -1757,9 +1871,7 @@ class _LiquidGlassCard extends StatelessWidget {
               ),
             ),
           ),
-
           child,
-
           Positioned.fill(
             child: IgnorePointer(
               child: CustomPaint(
@@ -1908,7 +2020,6 @@ class _HeroPanel extends StatelessWidget {
           'assets/images/hero.png',
           fit: BoxFit.cover,
         ),
-
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -1922,7 +2033,6 @@ class _HeroPanel extends StatelessWidget {
             ),
           ),
         ),
-
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -1943,7 +2053,6 @@ class _HeroPanel extends StatelessWidget {
             ),
           ),
         ),
-
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -1960,7 +2069,6 @@ class _HeroPanel extends StatelessWidget {
             ),
           ),
         ),
-
         Positioned(
           top: -120,
           left: -100,
@@ -1973,7 +2081,6 @@ class _HeroPanel extends StatelessWidget {
             ),
           ),
         ),
-
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -1994,7 +2101,6 @@ class _HeroPanel extends StatelessWidget {
             ),
           ),
         ),
-
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.only(
@@ -2049,9 +2155,7 @@ class _HeroPanel extends StatelessWidget {
             size: 26,
           ),
         ),
-
         const SizedBox(width: 15),
-
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2070,9 +2174,7 @@ class _HeroPanel extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 3),
-
             Text(
               'LIVE SPORTS INTELLIGENCE',
               style: TextStyle(
@@ -2121,9 +2223,7 @@ class _HeroPanel extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(width: 8),
-
               const Text(
                 'LIVE SPORTS TERMINAL',
                 style: TextStyle(
@@ -2231,9 +2331,7 @@ class _HeroPanel extends StatelessWidget {
             letterSpacing: -1.0,
           ),
         ),
-
         const SizedBox(height: 3),
-
         Text(
           label,
           style: TextStyle(
@@ -2287,10 +2385,8 @@ class _AuthToastState extends State<_AuthToast>
     switch (widget.type) {
       case _ToastType.success:
         return const Color(0xFF22C55E);
-
       case _ToastType.warning:
         return const Color(0xFFF59E0B);
-
       case _ToastType.error:
         return const Color(0xFFEF4444);
     }
@@ -2300,10 +2396,8 @@ class _AuthToastState extends State<_AuthToast>
     switch (widget.type) {
       case _ToastType.success:
         return Icons.check_circle_outline_rounded;
-
       case _ToastType.warning:
         return Icons.warning_amber_rounded;
-
       case _ToastType.error:
         return Icons.error_outline_rounded;
     }
@@ -2313,10 +2407,8 @@ class _AuthToastState extends State<_AuthToast>
     switch (widget.type) {
       case _ToastType.success:
         return 'Success';
-
       case _ToastType.warning:
         return 'Warning';
-
       case _ToastType.error:
         return 'Error';
     }
@@ -2488,3 +2580,4 @@ class _AuthToastState extends State<_AuthToast>
     );
   }
 }
+
