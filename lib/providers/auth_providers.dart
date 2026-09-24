@@ -7,11 +7,24 @@ class AuthProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   bool _isLoggedIn = false;
+  bool _isInitialized = false;
   String? _errorMessage;
+  bool _isPasswordResetLoading = false;
 
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _isLoggedIn;
+  bool get isInitialized => _isInitialized;
+  bool get isPasswordResetLoading => _isPasswordResetLoading;
   String? get errorMessage => _errorMessage;
+
+  AuthProvider() {
+    _init();   // ← call on construction
+  }
+  Future<void> _init() async {
+    _isLoggedIn = await _authService.isLoggedIn();
+    _isInitialized = true;
+    notifyListeners();
+  }
 
   Future<void> checkAuthentication() async {
     _isLoggedIn = await _authService.isLoggedIn();
@@ -95,10 +108,104 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ───────────────────────────────────────────────────────────────────────────
+// FORGOT PASSWORD — REQUEST OTP
+// ───────────────────────────────────────────────────────────────────────────
+
+Future<bool> requestPasswordReset({
+  required String identifier,
+}) async {
+  _setPasswordResetLoading(true);
+
+  try {
+    _errorMessage = null;
+
+    await _authService.requestPasswordReset(
+      identifier: identifier,
+    );
+
+    return true;
+  } catch (e) {
+    _errorMessage = _extractError(e);
+    return false;
+  } finally {
+    _setPasswordResetLoading(false);
+    notifyListeners();
+  }
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// FORGOT PASSWORD — VERIFY OTP
+// ───────────────────────────────────────────────────────────────────────────
+
+Future<bool> verifyPasswordResetOtp({
+  required String identifier,
+  required String otp,
+}) async {
+  _setPasswordResetLoading(true);
+
+  try {
+    _errorMessage = null;
+
+    await _authService.verifyPasswordResetOtp(
+      identifier: identifier,
+      otp: otp,
+    );
+
+    return true;
+  } catch (e) {
+    _errorMessage = _extractError(e);
+    return false;
+  } finally {
+    _setPasswordResetLoading(false);
+    notifyListeners();
+  }
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// FORGOT PASSWORD — RESET PASSWORD
+// ───────────────────────────────────────────────────────────────────────────
+
+  Future<bool> resetPassword({
+    required String identifier,
+    required String otp,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    _setPasswordResetLoading(true);
+
+    try {
+      _errorMessage = null;
+
+      await _authService.resetPassword(
+        identifier: identifier,
+        otp: otp,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+      );
+
+      return true;
+    } catch (e) {
+      _errorMessage = _extractError(e);
+      return false;
+    } finally {
+      _setPasswordResetLoading(false);
+      notifyListeners();
+    }
+  }
+
+  void _setPasswordResetLoading(bool value) {
+    _isPasswordResetLoading = value;
+    notifyListeners();
+  }
+
   String _extractError(Object error) {
     return error.toString().replaceFirst(
           'Exception: ',
           '',
         );
   }
+
+
+  
 }

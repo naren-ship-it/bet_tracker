@@ -1,60 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'core/constants/app_colors.dart';
 import 'providers/auth_providers.dart';
-import 'features/auth/screens/auth_page.dart';
-// Source - https://stackoverflow.com/a/71355167
-// Posted by slatieee, modified by community. See post 'Timeline' for change history
-// Retrieved 2026-09-23, License - CC BY-SA 4.0
+import 'core/routing/app_router.dart'; // ← use the single router
+import 'package:go_router/go_router.dart';
 
-import 'package:window_manager/window_manager.dart';
-
-
-// ── Router ────────────────────────────────────────────────────────────────────
-
-final _router = GoRouter(
-  initialLocation: '/login',
-  routes: [
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginPage(),
-    ),
-    GoRoute(
-      path: '/signup',
-      builder: (context, state) => const SignupPage(),
-    ),
-    GoRoute(
-      path: '/home',
-      builder: (context, state) => const _HomePage(),
-    ),
-  ],
-);
-
-// ── Entry point ───────────────────────────────────────────────────────────────
-
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  WindowManager.instance.ensureInitialized();
-  WindowManager.instance.setTitleBarStyle(TitleBarStyle.hidden);
+  await windowManager.ensureInitialized();
+
+  const windowOptions = WindowOptions(titleBarStyle: TitleBarStyle.hidden);
+  await windowManager.waitUntilReadyToShow(windowOptions);
+  await windowManager.show();
+
+  final authProvider = AuthProvider();           // ← create once
+  final router = createRouter(authProvider);     // ← pass into router
+
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AuthProvider(),
-      child: const BetTrackerApp(),
+    ChangeNotifierProvider.value(
+      value: authProvider,                       // ← reuse same instance
+      child: BetTrackerApp(router: router),
     ),
   );
 }
 
-// ── Root app ──────────────────────────────────────────────────────────────────
-
 class BetTrackerApp extends StatelessWidget {
-  const BetTrackerApp({super.key});
+  const BetTrackerApp({super.key, required this.router});
+  final GoRouter router;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(          // ← MaterialApp.router, not MaterialApp
-      routerConfig: _router,            // ← plug in GoRouter here
+    return MaterialApp.router(
+      routerConfig: router,
       debugShowCheckedModeBanner: false,
       title: 'Bet Tracker',
       theme: ThemeData(
@@ -67,41 +46,24 @@ class BetTrackerApp extends StatelessWidget {
         ),
         fontFamily: 'Inter',
       ),
-    );
-  }
-}
-
-// ── Temporary home screen (replace with your real one) ────────────────────────
-
-class _HomePage extends StatelessWidget {
-  const _HomePage();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        title: const Text(
-          'Bet Tracker',
-          style: TextStyle(color: AppColors.textPrimary),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: AppColors.textPrimary),
-            onPressed: () async {
-              await context.read<AuthProvider>().logout();
-              if (context.mounted) context.go('/login');
-            },
-          ),
-        ],
-      ),
-      body: const Center(
-        child: Text(
-          'Authentication successful',
-          style: TextStyle(color: AppColors.textPrimary, fontSize: 20),
-        ),
-      ),
+      // Splash while token check runs
+      builder: (context, child) {
+        return Consumer<AuthProvider>(
+          builder: (context, auth, _) {
+            if (!auth.isInitialized) {
+              return const Scaffold(
+                backgroundColor: Color(0xFF030E1C),
+                body: Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF2563EB),
+                  ),
+                ),
+              );
+            }
+            return child!;
+          },
+        );
+      },
     );
   }
 }
