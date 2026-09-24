@@ -1,15 +1,23 @@
 import 'dart:async';
 import 'package:bet_tracker/core/constants/app_colors.dart';
+import 'package:bet_tracker/core/storage/secure_storage.dart'; // adjust path
+import 'package:bet_tracker/models/auth_model.dart'; // adjust path
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
+
+// Your API host, no trailing slash. Move this to your constants file
+// (and delete it here) if you already have one.
+const String kBaseUrl = 'http://127.0.0.1:8000';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomAppBar({
     super.key,
+    this.user,
     this.onProfileTap,
     this.onLogoutTap,
   });
 
+  final UserModel? user;
   final VoidCallback? onProfileTap;
   final VoidCallback? onLogoutTap;
 
@@ -88,6 +96,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           const SizedBox(width: 8),
           _ProfileChip(
+            user: user,
             onProfileTap: onProfileTap,
             onLogoutTap: onLogoutTap,
           ),
@@ -259,8 +268,9 @@ class _NotificationIconState extends State<_NotificationIcon> {
 // ── Profile chip with dropdown menu ──────────────────────────────────────────
 
 class _ProfileChip extends StatefulWidget {
-  const _ProfileChip({this.onProfileTap, this.onLogoutTap});
+  const _ProfileChip({this.user, this.onProfileTap, this.onLogoutTap});
 
+  final UserModel? user;
   final VoidCallback? onProfileTap;
   final VoidCallback? onLogoutTap;
 
@@ -271,6 +281,83 @@ class _ProfileChip extends StatefulWidget {
 class _ProfileChipState extends State<_ProfileChip> {
   bool _hovering = false;
   final MenuController _menuController = MenuController();
+
+  UserModel? _user;
+
+  @override
+  void initState() {
+    super.initState();
+    _user = widget.user;
+    if (_user == null) _loadUser();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProfileChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.user != null && widget.user != oldWidget.user) {
+      setState(() => _user = widget.user);
+    }
+  }
+
+  Future<void> _loadUser() async {
+    final stored = await SecureStorage.getUser();
+    if (!mounted) return;
+    setState(() => _user = stored);
+  }
+
+  String get _name => _user?.username ?? 'Guest';
+  String get _email => _user?.email ?? '';
+
+  String get _initials {
+    final name = _user?.username.trim() ?? '';
+    if (name.isEmpty) return '?';
+    return name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase();
+  }
+
+  String get _imageUrl {
+    final path = _user?.profile.profileImage ?? '';
+    if (path.isEmpty) return '';
+    if (path.startsWith('http')) return path;
+    return '$kBaseUrl$path';
+  }
+
+  Widget _avatar(double size, double fontSize) {
+    final fallback = Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [AppColors.secondary, AppColors.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Text(
+        _initials,
+        style: TextStyle(
+          color: AppColors.background,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+
+    if (_imageUrl.isEmpty) return fallback;
+
+    return ClipOval(
+      child: Image.network(
+        _imageUrl,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback,
+        loadingBuilder: (_, child, progress) =>
+            progress == null ? child : fallback,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -290,6 +377,49 @@ class _ProfileChipState extends State<_ProfileChip> {
         padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 4)),
       ),
       menuChildren: [
+        // User header inside dropdown
+        Container(
+          width: 180,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              _avatar(32, 12),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (_email.isNotEmpty)
+                      Text(
+                        _email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 10.5,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          height: 1,
+          color: AppColors.border.withOpacity(0.5),
+        ),
         _MenuItem(
           icon: Icons.person_outline,
           label: 'Profile view',
@@ -320,9 +450,8 @@ class _ProfileChipState extends State<_ProfileChip> {
           onEnter: (_) => setState(() => _hovering = true),
           onExit: (_) => setState(() => _hovering = false),
           child: GestureDetector(
-            onTap: () {
-              controller.isOpen ? controller.close() : controller.open();
-            },
+            onTap: () =>
+                controller.isOpen ? controller.close() : controller.open(),
             child: Container(
               height: 30,
               padding: const EdgeInsets.only(left: 4, right: 8),
@@ -335,34 +464,19 @@ class _ProfileChipState extends State<_ProfileChip> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [AppColors.secondary, AppColors.primaryDark],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Text(
-                      'TV',
-                      style: TextStyle(
-                        color: AppColors.background,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
+                  _avatar(24, 10),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Tamil Vanan',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w500,
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 140),
+                    child: Text(
+                      _name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 4),

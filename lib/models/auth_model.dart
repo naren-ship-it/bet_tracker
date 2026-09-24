@@ -20,10 +20,10 @@ class AuthResponse {
   }
 
   Map<String, dynamic> toJson() => {
-        'status': status,
-        'message': message,
-        'data': data?.toJson(),
-      };
+    'status': status,
+    'message': message,
+    'data': data?.toJson(),
+  };
 
   /// Convenience getter — returns the access token or empty string
   String get token => data?.tokens.access ?? '';
@@ -45,9 +45,9 @@ class AuthData {
   }
 
   Map<String, dynamic> toJson() => {
-        'user': user.toJson(),
-        'tokens': tokens.toJson(),
-      };
+    'user': user.toJson(),
+    'tokens': tokens.toJson(),
+  };
 }
 
 // ─────────────────────────────────────────────
@@ -66,9 +66,9 @@ class AuthTokens {
   }
 
   Map<String, dynamic> toJson() => {
-        'refresh': refresh,
-        'access': access,
-      };
+    'refresh': refresh,
+    'access': access,
+  };
 }
 
 // ─────────────────────────────────────────────
@@ -102,17 +102,29 @@ class UserModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'username': username,
-        'email': email,
-        'first_name': firstName,
-        'last_name': lastName,
-        'profile': profile.toJson(),
-      };
+    'id': id,
+    'username': username,
+    'email': email,
+    'first_name': firstName,
+    'last_name': lastName,
+    'profile': profile.toJson(),
+  };
 
   String get fullName {
     final full = '$firstName $lastName'.trim();
     return full.isNotEmpty ? full : username;
+  }
+
+  /// Two-letter initials for avatar fallbacks (e.g. "Tamil Vanan" -> "TV")
+  String get initials {
+    final f = firstName.trim();
+    final l = lastName.trim();
+    if (f.isNotEmpty && l.isNotEmpty) return '${f[0]}${l[0]}'.toUpperCase();
+    if (f.isNotEmpty) return f[0].toUpperCase();
+    if (username.isNotEmpty) {
+      return username.substring(0, username.length >= 2 ? 2 : 1).toUpperCase();
+    }
+    return '?';
   }
 }
 
@@ -132,7 +144,7 @@ class UserProfile {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'profile_image': profileImage,
-      };
+    'id': id,
+    'profile_image': profileImage,
+  };
 }
