@@ -139,7 +139,7 @@ Future<Map<String, dynamic>> requestPasswordReset({
     final response = await _dio.post(
       ApiConstants.forgotPasswordRequest,
       data: {
-        'identifier': identifier.trim(),
+        'credentials': identifier.trim(),
       },
     );
 
@@ -185,7 +185,7 @@ Future<Map<String, dynamic>> verifyPasswordResetOtp({
     final response = await _dio.post(
       ApiConstants.forgotPasswordVerifyOtp,
       data: {
-        'identifier': identifier.trim(),
+        'credentials': identifier.trim(),
         'otp': otp.trim(),
       },
     );
@@ -200,8 +200,29 @@ Future<Map<String, dynamic>> verifyPasswordResetOtp({
 
       if (data['status'] == false) {
         throw Exception(
-          data['message']?.toString() ??
-              'Invalid verification code.',
+          data['message']?.toString() ?? 'Invalid verification code.',
+        );
+      }
+
+      // Backend returns:
+      // data: {
+      //   reset_token: "..."
+      // }
+      final responseData = data['data'];
+
+      if (responseData is Map<String, dynamic>) {
+        final resetToken = responseData['reset_token']?.toString();
+
+        if (resetToken != null && resetToken.isNotEmpty) {
+          await SecureStorage.saveResetToken(resetToken);
+        } else {
+          throw Exception(
+            'Reset token was not returned by server.',
+          );
+        }
+      } else {
+        throw Exception(
+          'Reset token was not returned by server.',
         );
       }
 
@@ -220,56 +241,64 @@ Future<Map<String, dynamic>> verifyPasswordResetOtp({
   }
 }
 
+
 // ───────────────────────────────────────────────────────────────────────────
 // FORGOT PASSWORD — RESET PASSWORD
 // ───────────────────────────────────────────────────────────────────────────
 
-  Future<Map<String, dynamic>> resetPassword({
-    required String identifier,
-    required String otp,
-    required String newPassword,
-    required String confirmPassword,
-  }) async {
-    try {
-      final response = await _dio.post(
-        ApiConstants.forgotPasswordReset,
-        data: {
-          'identifier': identifier.trim(),
-          'otp': otp.trim(),
-          'new_password': newPassword,
-          'confirm_password': confirmPassword,
-        },
+Future<Map<String, dynamic>> resetPassword({
+  required String newPassword,
+  required String confirmPassword,
+}) async {
+  try {
+    final resetToken = await SecureStorage.getResetToken();
+
+    if (resetToken == null || resetToken.isEmpty) {
+      throw Exception(
+        'Password reset session has expired. Please request a new OTP.',
       );
+    }
 
-      debugPrint(
-        'Password reset response: ${response.data}',
-        wrapWidth: 1024,
-      );
+    final response = await _dio.post(
+      ApiConstants.forgotPasswordReset,
+      data: {
+        'reset_token': resetToken,
+        'new_password': newPassword,
+        'confirm_password': confirmPassword,
+      },
+    );
 
-      if (response.data is Map<String, dynamic>) {
-        final data = Map<String, dynamic>.from(response.data);
+    debugPrint(
+      'Password reset response: ${response.data}',
+      wrapWidth: 1024,
+    );
 
-        if (data['status'] == false) {
-          throw Exception(
-            data['message']?.toString() ??
-                'Unable to reset password.',
-          );
-        }
+    if (response.data is Map<String, dynamic>) {
+      final data = Map<String, dynamic>.from(response.data);
 
-        return data;
+      if (data['status'] == false) {
+        throw Exception(
+          data['message']?.toString() ?? 'Unable to reset password.',
+        );
       }
 
-      throw Exception('Invalid server response.');
-    } on DioException catch (e) {
-      debugPrint(
-        'Password reset error: '
-        '${e.response?.statusCode} ${e.response?.data}',
-        wrapWidth: 1024,
-      );
+      // Reset token must not be reused after successful password reset.
+      await SecureStorage.deleteResetToken();
 
-      throw Exception(_extractDioMessage(e));
+      return data;
     }
+
+    throw Exception('Invalid server response.');
+  } on DioException catch (e) {
+    debugPrint(
+      'Password reset error: '
+      '${e.response?.statusCode} ${e.response?.data}',
+      wrapWidth: 1024,
+    );
+
+    throw Exception(_extractDioMessage(e));
   }
+}
 
   String _extractDioMessage(DioException error) {
     final data = error.response?.data;

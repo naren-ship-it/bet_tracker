@@ -6,4 +6,7 @@ class ApiConstants {
 
   static const String login = '/auth/login/';
   static const String signup = '/auth/register/';
+  static const String forgotPasswordRequest = '/auth/forget-password/';
+  static const String forgotPasswordVerifyOtp = '/auth/verify-otp/';
+  static const String forgotPasswordReset = '/auth/reset-password/';
 }
