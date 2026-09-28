@@ -60,7 +60,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   const SizedBox(width: 10),
                   const Text(
-                    'bet_tracker',
+                    'BET TRACKER',
                     style: TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 13,

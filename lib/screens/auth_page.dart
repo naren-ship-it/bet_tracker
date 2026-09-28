@@ -803,6 +803,7 @@ class _AuthPageState extends State<AuthPage>
               ctrl: _loginEmail,
               label: 'Username',
               icon: Icons.person_outline,
+              textInputAction: TextInputAction.next,
               validator: (v) {
                 if (v == null || v.trim().isEmpty) {
                   return 'Please enter your username';
@@ -823,6 +824,8 @@ class _AuthPageState extends State<AuthPage>
               label: 'Password',
               icon: Icons.lock_outline,
               obscure: _loginObscure,
+              textInputAction: TextInputAction.done,
+              onSubmitted : (_) => _login(),
               suffix: _eyeIcon(
                 show: _loginObscure,
                 onTap: () {
@@ -944,6 +947,7 @@ class _AuthPageState extends State<AuthPage>
               ctrl: _signupName,
               label: 'Full Name',
               icon: Icons.person_outline,
+              textInputAction: TextInputAction.next,
               validator: (v) {
                 if (v == null || v.trim().isEmpty) {
                   return 'Please enter your full name';
@@ -978,6 +982,8 @@ class _AuthPageState extends State<AuthPage>
               label: 'Password',
               icon: Icons.lock_outline,
               obscure: _signupObscure,
+              textInputAction: TextInputAction.done,
+              onSubmitted : (_) => _signup(),
               suffix: _eyeIcon(
                 show: _signupObscure,
                 onTap: () {
@@ -1457,6 +1463,8 @@ class _AuthPageState extends State<AuthPage>
     required IconData icon,
     bool obscure = false,
     TextInputType? type,
+    TextInputAction? textInputAction,        // add
+    ValueChanged<String>? onSubmitted, 
     Widget? suffix,
     String? Function(String?)? validator,
     List<TextInputFormatter>? inputFormatters,
@@ -1466,6 +1474,8 @@ class _AuthPageState extends State<AuthPage>
       obscureText: obscure,
       keyboardType: type,
       inputFormatters: inputFormatters,
+      textInputAction: textInputAction,  // add
+      onFieldSubmitted: onSubmitted,
       validator: validator,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       style: const TextStyle(
@@ -2304,9 +2314,9 @@ class _HeroPanel extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _stat('10K+', 'Active users'),
+            _stat('CRICKET', 'Tournament tracking'),
             _divider(),
-            _stat('50+', 'Sports markets'),
+            _stat('SMART', 'Bet analytics'),
             _divider(),
             _stat('LIVE', 'Score feeds'),
           ],

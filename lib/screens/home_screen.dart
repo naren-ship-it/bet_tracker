@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../core/constants/app_colors.dart';
@@ -29,10 +30,8 @@ class HomeScreen extends StatelessWidget {
                   .logout();
 
               if (context.mounted) {
-                Navigator.pushReplacementNamed(
-                  context,
-                  '/login',
-                );
+                context.go('/login');
+               
               }
             },
             icon: const Icon(
