@@ -1,7 +1,4 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-
 import 'package:bet_tracker/main.dart';
 import '../../screens/auth_page.dart';
 import '../../providers/auth_providers.dart';

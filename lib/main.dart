@@ -1,3 +1,4 @@
+import 'package:bet_tracker/providers/player_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -35,10 +36,12 @@ void main() async {
   final router = createRouter(authProvider);
 
   runApp(
-    ChangeNotifierProvider.value(
-      value: authProvider,
-      child: BetTrackerApp(router: router),
-    ),
+    MultiProvider(providers: [
+      ChangeNotifierProvider.value(value: authProvider),
+      ChangeNotifierProvider(create: (_) => PlayerProvider()),
+    ],
+    child : BetTrackerApp(router: router),),
+    
   );
 }
 
