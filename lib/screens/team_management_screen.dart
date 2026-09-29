@@ -1,7 +1,7 @@
 // screens/team_management_screen.dart
 import 'dart:async';
 import 'dart:math' as math;
-
+import 'package:bet_tracker/app_widgets/app_snackbar.dart';
 import 'package:bet_tracker/core/constants/app_colors.dart';
 import 'package:bet_tracker/models/team_model.dart';
 import 'package:bet_tracker/services/team_service.dart';
@@ -154,16 +154,13 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
   }
 
   void _toast(String msg, {bool error = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        behavior: SnackBarBehavior.floating,
-        width: 420,
-        backgroundColor: error ? _C.danger : _C.success,
-        content: Text(msg, style: const TextStyle(color: Colors.white)),
-      ));
+  if (!mounted) return;
+  if (error) {
+    AppSnackbar.error(context, msg);
+  } else {
+    AppSnackbar.success(context, msg);
   }
+}
 
   // ───────────── actions ─────────────
 

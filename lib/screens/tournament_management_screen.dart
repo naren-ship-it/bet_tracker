@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:bet_tracker/app_widgets/app_snackbar.dart';
 import 'package:bet_tracker/core/constants/app_colors.dart';
 import 'package:bet_tracker/models/team_model.dart';
 import 'package:bet_tracker/models/tournament_model.dart';
@@ -181,17 +182,7 @@ class _TournamentManagementScreenState
     _load();
   }
 
-  void _toast(String msg, {bool error = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        behavior: SnackBarBehavior.floating,
-        width: 420,
-        backgroundColor: error ? _C.danger : _C.success,
-        content: Text(msg, style: const TextStyle(color: Colors.white)),
-      ));
-  }
+  
 
   // ── Add Tournament Type ──
 
@@ -229,7 +220,7 @@ class _TournamentManagementScreenState
                       if (!mounted) return;
                       setState(() => _types = [..._types, created]);
                       Navigator.pop(context);
-                      _toast('Tournament type created');
+                      AppSnackbar.success(context,'Tournament type created');
                     } catch (e) {
                       setDialogState(() {
                         saving = false;
@@ -269,7 +260,7 @@ class _TournamentManagementScreenState
     );
     if (!mounted) return;
     if (saved == true) {
-      _toast(tournament == null
+      AppSnackbar.success(context,tournament == null
           ? 'Tournament created successfully'
           : 'Tournament updated successfully');
       if (tournament == null) {
@@ -343,11 +334,11 @@ class _TournamentManagementScreenState
     try {
       await _tournamentService.deleteTournament(t.id);
       if (!mounted) return;
-      _toast('Tournament deleted');
+      AppSnackbar.success(context,'Tournament deleted');
       if (_tournaments.length == 1 && _page > 1) _page--;
       await _refreshAll();
     } catch (e) {
-      if (mounted) _toast(e.toString(), error: true);
+      if (mounted) AppSnackbar.error(context, e.toString());
     }
   }
 
@@ -1620,9 +1611,9 @@ class _AllocateTeamsPanelState extends State<_AllocateTeamsPanel> {
         _groupCtrl.clear();
         _tab = 0;
       });
-      _snack('$created team(s) allocated successfully.');
+      AppSnackbar.success(context,'$created team(s) allocated successfully.');
     } catch (e) {
-      _snack(e.toString(), error: true);
+      AppSnackbar.error(context,e.toString());
     } finally {
       if (mounted) setState(() => _saving = false);
     }

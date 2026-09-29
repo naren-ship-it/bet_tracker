@@ -10,7 +10,7 @@ enum AppModule {
   settings,
 }
 
-class CustomAppFooter extends StatelessWidget {
+class CustomAppFooter extends StatefulWidget {
   const CustomAppFooter({
     super.key,
     required this.currentModule,
@@ -60,42 +60,101 @@ class CustomAppFooter extends StatelessWidget {
   ];
 
   @override
+  State<CustomAppFooter> createState() => _CustomAppFooterState();
+}
+
+class _CustomAppFooterState extends State<CustomAppFooter> {
+  bool _visible = false;
+
+  static const _duration = Duration(milliseconds: 260);
+  static const _curve = Curves.easeOutCubic;
+
+  @override
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.bottomCenter,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceLow.withOpacity(0.92),
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: AppColors.border.withOpacity(0.4)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.35),
-                blurRadius: 28,
-                offset: const Offset(0, 10),
+      // Invisible hover zone along the bottom edge. It stays active while the
+      // pointer is over the bar too, because the bar sits inside this zone.
+      child: MouseRegion(
+        opaque: false, // don't block hover/clicks on the content underneath
+        onEnter: (_) => setState(() => _visible = true),
+        onExit: (_) => setState(() => _visible = false),
+        child: SizedBox(
+          width: 720,
+          height: 120,
+          child: Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              // Small hint pill so users know something is down there.
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: AnimatedOpacity(
+                  duration: _duration,
+                  opacity: _visible ? 0 : 0.5,
+                  child: Container(
+                    width: 56,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.textSecondary,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ),
+
+              // The footer bar itself.
+              IgnorePointer(
+                ignoring: !_visible,
+                child: AnimatedSlide(
+                  duration: _duration,
+                  curve: _curve,
+                  offset: _visible ? Offset.zero : const Offset(0, 1.2),
+                  child: AnimatedOpacity(
+                    duration: _duration,
+                    curve: _curve,
+                    opacity: _visible ? 1 : 0,
+                    child: _buildBar(),
+                  ),
+                ),
               ),
             ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: _items.map((item) {
-              final isActive = item.module == currentModule;
-              return _FooterItem(
-                data: item,
-                isActive: isActive,
-                onTap: () => onModuleSelected(item.module),
-              );
-            }).toList(),
           ),
         ),
       ),
     );
   }
-}
 
+  Widget _buildBar() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceLow.withOpacity(0.92),
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(color: AppColors.border.withOpacity(0.4)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 28,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: CustomAppFooter._items.map((item) {
+            return _FooterItem(
+              data: item,
+              isActive: item.module == widget.currentModule,
+              onTap: () => widget.onModuleSelected(item.module),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
 class _FooterItemData {
   const _FooterItemData({
     required this.module,
